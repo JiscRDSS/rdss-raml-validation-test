@@ -1,0 +1,23 @@
+{
+  "name": "rdss-raml-validation-test",
+  "version": "1.0.0",
+  "description": "description",
+  "main": "index.js",
+  "dependencies": {
+    "raml-1-parser": "^1.1.21"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "metadata-spec.raml"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jiscrdss/rdss-raml-validation-test.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/jiscrdss/rdss-raml-validation-test/issues"
+  },
+  "homepage": "https://github.com/jiscrdss/rdss-raml-validation-test#readme"
+}

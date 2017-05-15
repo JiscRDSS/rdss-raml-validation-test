@@ -1,0 +1,356 @@
+#%RAML 1.0
+title: JISC Organisation API
+version: v1
+baseUri: api.researchdata.alpha.jisc.ac.uk
+types:
+  OrganisationType:
+    type: strin
+    enum: ["charity",
+           "commercial",
+           "funder",
+           "furtherEducation",
+           "government",
+           "health",
+           "higherEducation",
+           "other",
+           "professionalBody",
+           "research",
+           "school",
+           "skills"]
+  Organisation:
+    type: object
+    properties:
+      organisationID: integer
+      organisationName: string
+      organisationType: OrganisationType
+  Value:
+    type: object
+    properties:
+      valueId: integer
+      valueName: string
+  Vocabulary:
+    type: object
+    properties:
+      vocabularyId: integer
+      vocabularyName: string
+      vocabularyValues: Value[]
+  Error:
+    type: object
+    properties:
+      code:
+        type: string
+        enum: ["BadArgument",
+              "VersionNotAccepted",
+              "RateLimitExceeded"]
+      message: string
+  ErrorResponse:
+    type: object
+    properties:
+      error: Error
+traits:
+  accept:
+    usage: |
+      We encourage you to explicitly request the latest version via the
+      Accept header.
+    responses:
+      200:
+        headers:
+          Accept?:
+            description: |
+              By default, all requests receive the **v1** version. We encourage
+              you to explicitly request this version via the Accept header.
+            example: application/vnd.jisc.api.v1+json
+      406:
+        description: |
+          Not Acceptable - This status code will occur when the version
+          requested in the Accept header is non existent or deprecated.
+        body:
+          application/json:
+            type: ErrorResponse
+            example: |
+              {
+                "error": {
+                    "code": "VersionNotAccepted",
+                    "message": "This version is invalid or non longer available. Please verify the latest. Documentation url: https://github.com/JiscRDSS/rdss-external-api-spec"
+                  }
+              }
+  cacheable:
+    usage: |
+      Apply this trait to any GET method that supports caching control.
+    responses:
+      200:
+        headers:
+          Cache-Control:
+            description: |
+              Activates caching and defines cache behavior through cache
+              response directives.
+              Usually defines public or private (cacheable by proxy or not)
+              and max-age for resource.
+              See http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html
+              for more information.
+            type: string
+            example: private, max-age=31536000
+  cors:
+    usage: |
+      Apply this trait to any GET method that supports
+      Cross Origin Resource Sharing (CORS). You can read the
+      [CORS W3C Recommendation](https://www.w3.org/TR/cors/), or
+      [this intro](https://code.google.com/archive/p/html5security/wikis/CrossOriginRequestSecurity.wiki)
+      from the HTML 5 Security Guide.
+    responses:
+      200:
+        headers:
+          Access-Control-Allow-Origin?:
+            type: string
+            enum: ["*"]
+          Access-Control-Expose-Headers?:
+            type: string
+            enum: ["X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Reset"]
+  rateLimited:
+    usage: |
+      Apply this trait to any GET method that will be subject to
+      Rate Limiting.
+    responses:
+      200:
+        headers: &commonHeaders
+          X-RateLimit-Limit:
+            description: |
+              The maximum number of requests that the consumer
+              is permitted to make per hour.
+            type: integer
+            default: 1000
+
+          X-RateLimit-Remaining:
+            description: |
+              The number of requests remaining in the current rate limit window.
+            type: integer
+
+          X-RateLimit-Reset:
+            description: |
+              The time at which the current rate limit window
+              resets in UTC epoch seconds
+      403:
+        headers: *commonHeaders
+        body:
+          application/json:
+            type: ErrorResponse
+            example: |
+              {
+                "error": {
+                    "code": "RateLimitExceeded",
+                    "message": "API rate limit exceeded for xxx.xxx.xxx.xxx. Please check documentation https://github.com/JiscRDSS/rdss-external-api-spec"
+                  }
+              }
+
+/organisations:
+  get:
+    is: [ accept, cacheable, cors, rateLimited ]
+    responses:
+      200:
+        body:
+          application/json:
+            type: Organisation[]
+            example: |
+              [
+                {
+                  "organisationID": 274,
+                  "organisationName": "University of Winchester",
+                  "organisationType": "higherEducation"
+                },
+                {
+                  "organisationID": 1539,
+                  "organisationName": "Imperial College of Science, Technology and Medicine",
+                  "organisationType": "charity"
+                }
+              ]
+/organisations/{organisationID}:
+  uriParameters:
+    organisationID:
+      type: integer
+  get:
+    is: [ accept, cacheable, cors, rateLimited ]
+    responses:
+      200:
+        body:
+          application/json:
+            type: Organisation
+            example: |
+              {
+                "organisationID": 274,
+                "organisationName": "University of Winchester",
+                "organisationType": "higherEducation"
+              }
+      400:
+        description: |
+          "Organisation ID is invalid"
+        body:
+          application/json:
+            type: ErrorResponse
+            example: |
+              {
+                "error": {
+                  "code": "BadArgument",
+                  "message": "Organisation ID must be a number."
+                }
+              }
+/organisations/type/{organisationType}:
+  uriParameters:
+    organisationType:
+      type: OrganisationType
+  get:
+    is: [ accept, cacheable, cors, rateLimited ]
+    responses:
+      200:
+        body:
+          application/json:
+            type: Organisation[]
+            example: |
+              [
+                {
+                  "organisationID": 240,
+                  "organisationName": "St Mary's University, Twickenham",
+                  "organisationType": "charity"
+                },
+                {
+                  "organisationID": 1539,
+                  "organisationName": "Imperial College of Science, Technology and Medicine",
+                  "organisationType": "charity"
+                }
+              ]
+      400:
+        description: |
+          "Organisation type is invalid."
+        body:
+            application/json:
+              type: ErrorResponse
+              example: |
+                {
+                  "error": {
+                    "code": "BadArgument",
+                    "message": "Organisation type is invalid. Look up for valid types."
+                  }
+                }
+/vocabularies:
+  get:
+     is: [ accept, cacheable, cors, rateLimited ]
+     responses:
+       200:
+         body:
+           application/json:
+             type: Vocabulary[]
+             example: |
+               [
+                 {
+                   "vocabularyId": 1,
+                   "vocabularyName": "accessType",
+                   "vocabularyValues": [
+                     {
+                       "valueId": 1,
+                       "valueName": "open"
+                     },
+                     {
+                       "valueId": 2,
+                       "valueName": "restricted"
+                     }
+                   ]
+                 },
+                 {
+                   "vocabularyId": 2,
+                   "vocabularyName": "organisationIdentifierType",
+                   "vocabularyValues": [
+                     {
+                       "valueId": 1,
+                       "valueName": "controlled"
+                     },
+                     {
+                       "valueId": 2,
+                       "valueName": "closed"
+                     }
+                   ]
+                 },
+                 {
+                   "vocabularyId": 3,
+                   "vocabularyName": "APC",
+                   "vocabularyValues": []
+                 }
+               ]
+  post:
+      description: |
+           Takes a list of vocabularies and creates them or updates
+           them if already existing.
+      queryParameters:
+        accessToken:
+          description: |
+            "The access token provided by the authentication application"
+      is: [ accept ]
+      body:
+        application/json:
+          type: Vocabulary[]
+          example: |
+            [
+              {
+                "vocabularyId": 1,
+                "vocabularyName": "accessType",
+                "vocabularyValues": [
+                  {
+                    "valueId": 1,
+                    "valueName": "open"
+                  },
+                  {
+                    "valueId": 2,
+                    "valueName": "restricted"
+                  }
+                ]
+              },
+              {
+                "vocabularyId": 2,
+                "vocabularyName": "organisationIdentifierType",
+                "vocabularyValues": [
+                  {
+                    "valueId": 1,
+                    "valueName": "controlled"
+                  },
+                  {
+                    "valueId": 2,
+                    "valueName": "closed"
+                  }
+                ]
+              },
+              {
+                "vocabularyId": 3,
+                "vocabularyName": "APC",
+                "vocabularyValues": []
+              }
+            ]
+      responses:
+        200:
+          description: |
+            Success. All resources have been added/updated accordingly.
+        413:
+          description: |
+            Request body is too large. Use this when the list of vocabularies
+            sent in a request is too big. WARNING: that might create a loophole
+            depending on implementation.
+/vocabularies/{vocabularyId}:
+  get:
+     is: [ accept, cacheable, cors, rateLimited ]
+     responses:
+       200:
+         body:
+           application/json:
+             type: Vocabulary
+             example: |
+                 {
+                   "vocabularyId": 1,
+                   "vocabularyName": "accessType",
+                   "vocabularyValues": [
+                    {
+                      "valueId": 1,
+                      "valueName": "open"
+                    },
+                    {
+                      "valueId": 2,
+                      "valueName": "restricted"
+                    }
+                   ]
+                 }
