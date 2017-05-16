@@ -17,7 +17,7 @@ try {
 catch(err) {
     console.log(err.message);
     for(var i = 0; i < err.parserErrors.length; i++) {
-        console.log("error: " + err.parserErrors[i].message);
+        console.log("error: " + err.parserErrors[i].message + " in " + err.parserErrors[i].path + ":" + err.parserErrors[i].range.start.line);
     }
 
     return;
