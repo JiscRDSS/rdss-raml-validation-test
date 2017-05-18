@@ -20,14 +20,17 @@ catch(err) {
         console.log("error: " + err.parserErrors[i].message + " in " + err.parserErrors[i].path + ":" + err.parserErrors[i].range.start.line);
     }
 
-    return;
+    process.exit(1);
 }
 
-var apiResources = api.resources;
+process.exit(0);
+
+//var apiResources = api.resources;
 
 /**
  * Process resource (here we just trace different paramters of URL)
  **/
+/*
 function processResource(res) {
     // User-friendly name (if provided)
     if (res.displayName) {
@@ -71,8 +74,8 @@ Object.keys(apiResources).forEach(function(key){
 })
 
 api.types().forEach(function (type) {
-
     console.log(type.name() + " : " + type.kind());
     console.log("\t type:", type.type())
-
 });
+*/
+
